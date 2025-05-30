@@ -64,7 +64,7 @@ Ensure the following custom fields are created and available in your CRM for pro
 - `retrycounter === 4` on the Payment record.
 - `createdtime > 2025-05-28` to avoid acting on legacy records.
 - Internet has **not** already been disabled (`cf_payments_internetdisabledbyvtiger !== "1"`).
-- `paymentsstatus === "Received(Invoice)"`.
+- `paymentsstatus !== "Received(Invoice)"`.
 - Related invoice exists and links to a valid Deal.
 - Deal record contains a valid PPPoE username.
 

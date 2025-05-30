@@ -24,8 +24,7 @@ var Payments_Component_DisableInternet = VTAP.Component.Core.extend({
             this.retryCount = updatedRecord.retrycounter;
             this.paymentRecord = updatedRecord;
             console.log(this.paymentRecord);
-            this.addLog("[DEBUG] Payment record loaded: " + JSON.stringify(this.paymentRecord));
-
+            this.addLog(`[DEBUG] Payment: ID=${this.paymentRecord.id}, Status=${this.paymentRecord.paymentsstatus}, RetryCount=${this.paymentRecord.retrycounter}`);
             // Exit if retry counter is not 4
             if (this.retryCount > REQUIRED_RETRY_COUNT)
             {
@@ -51,9 +50,9 @@ var Payments_Component_DisableInternet = VTAP.Component.Core.extend({
             }
 
             // Exit if paymentsstatus is not 'Received(Invoice)'
-            if (updatedRecord.paymentsstatus !== "Received(Invoice)")
+            if (updatedRecord.paymentsstatus === "Received(Invoice)")
             {
-                console.log("[INFO] Skipping: paymentsstatus is not 'Received(Invoice)'.");
+                console.log("[INFO] Skipping: paymentsstatus is 'Received(Invoice)'.");
                 return;
             }
 
@@ -89,16 +88,14 @@ var Payments_Component_DisableInternet = VTAP.Component.Core.extend({
                 if (error || !invoiceRecord)
                 {
                     console.error("[ERROR] Could not fetch invoice record for the payment:", error);
-                    this.addLog("[ERROR] Could not fetch invoice record for the payment:", error);
+                    this.addLog(`[ERROR] Could not fetch invoice record for the payment: ${JSON.stringify(error)}`);
                     this.flagVtapScriptFailure();
                     this.storeExecutionLogs();
                     return;
                 }
 
                 console.log("[INFO] Invoice record fetched for the payment: ", invoiceRecord);
-                this.addLog("[INFO] Invoice record fetched for the payment:", invoiceRecord);
-
-                this.relatedDealId = invoiceRecord.potential_id?.id;
+                this.addLog(`[INFO] Invoice fetched. ID: ${invoiceRecord.id}, Linked Deal ID: ${invoiceRecord.potential_id?.id}`); this.relatedDealId = invoiceRecord.potential_id?.id;
                 this.relatedDealModule = invoiceRecord.potential_id?.module;
 
                 if (!this.relatedDealId || !this.relatedDealModule)
@@ -125,15 +122,14 @@ var Payments_Component_DisableInternet = VTAP.Component.Core.extend({
                 if (error || !dealRecord)
                 {
                     console.error("[ERROR] Could not fetch deal record:", error);
-                    this.addLog("[ERROR] Could not fetch deal record:", error);
+                    this.addLog(`[ERROR] Could not fetch deal record: ${JSON.stringify(error)}`);
                     this.flagVtapScriptFailure();
                     this.storeExecutionLogs();
                     return;
                 }
 
                 console.log("[INFO] Deal record fetched for the payment: ", dealRecord);
-                this.addLog("[INFO] Deal record fetched for the payment: ", dealRecord);
-
+                this.addLog(`[INFO] Deal fetched. ID: ${dealRecord.id}, PPPoE Username: ${dealRecord.cf_potentials_pppoeusername}`);
                 this.pppoeUsername = dealRecord.cf_potentials_pppoeusername;
 
                 if (!this.pppoeUsername)
@@ -159,7 +155,7 @@ var Payments_Component_DisableInternet = VTAP.Component.Core.extend({
                 if (error || !response?.content)
                 {
                     console.error("[ERROR] Failed to fetch PPPoE ID from MikroTik API:", error);
-                    this.addLog("[ERROR] Failed to fetch PPPoE ID from MikroTik API:", error);
+                    this.addLog(`[ERROR] Failed to fetch PPPoE ID from MikroTik API: ${JSON.stringify(error)}`);
                     this.flagVtapScriptFailure();
                     this.storeExecutionLogs();
                     return;
@@ -171,7 +167,7 @@ var Payments_Component_DisableInternet = VTAP.Component.Core.extend({
                     if (!userRecords.length || !userRecords[0]['.id'])
                     {
                         console.warn("[WARN] No valid PPPoE user found on Netwire Fiber Radius Server and Mikroitk API parsed response :", userRecords);
-                        this.addLog("[WARN] No valid PPPoE user found on Netwire Fiber Radius Server and Mikroitk API parsed response :", userRecords);
+                        this.addLog(`[WARN] No valid PPPoE user found on Netwire Fiber Radius Server. Parsed response: ${JSON.stringify(userRecords)}`);
                         this.flagVtapScriptFailure();
                         this.storeExecutionLogs();
                         return;
@@ -179,13 +175,12 @@ var Payments_Component_DisableInternet = VTAP.Component.Core.extend({
 
                     this.pppoeUserId = userRecords[0]['.id'];
                     console.log("[INFO] PPPoE user ID:", this.pppoeUserId);
-                    this.addLog("[INFO] PPPoE user ID:", this.pppoeUserId);
-
+                    this.addLog(`[INFO] PPPoE user ID: ${this.pppoeUserId}`);
                     this.disableInternetAccess();
                 } catch (parseError)
                 {
                     console.error("[ERROR] Failed to parse MikroTik API response:", parseError);
-                    this.addLog("[ERROR] Failed to parse MikroTik API response:", parseError);
+                    this.addLog(`[ERROR] Failed to parse MikroTik API response: ${JSON.stringify(parseError)}`);
                     this.flagVtapScriptFailure();
                     this.storeExecutionLogs();
                     return;
@@ -203,7 +198,7 @@ var Payments_Component_DisableInternet = VTAP.Component.Core.extend({
                 if (error)
                 {
                     console.error("[ERROR] Failed to disable PPPoE user Netwire Fiber Radius Server through Mikrotik API:", error);
-                    this.addLog("[ERROR] Failed to disable PPPoE user Netwire Fiber Radius Server through Mikrotik API:", error);
+                    this.addLog(`[ERROR] Failed to disable PPPoE user on Netwire Fiber Radius Server through MikroTik API: ${JSON.stringify(error)}`);
                     this.flagVtapScriptFailure();
                     this.storeExecutionLogs();
                     return;
@@ -229,14 +224,14 @@ var Payments_Component_DisableInternet = VTAP.Component.Core.extend({
                 if (error)
                 {
                     console.error("[ERROR] Failed to update Deal sales_stage:", error);
-                    this.addLog("[ERROR] Failed to update Deal sales_stage:", error);
+                    this.addLog(`[ERROR] Failed to update Deal sales_stage: ${JSON.stringify(error)}`);
                     this.flagVtapScriptFailure();
                     this.storeExecutionLogs();
                     return;
                 } else
                 {
                     console.log("[INFO] Deal sales_stage updated to:", DISCONNECTION_STAGE);
-                    this.addLog("[INFO] Deal sales_stage updated to:", DISCONNECTION_STAGE);
+                    this.addLog(`[INFO] Deal sales_stage updated to: ${DISCONNECTION_STAGE}`);
                     this.markPaymentAsDisabled();
                 }
             });
@@ -254,13 +249,14 @@ var Payments_Component_DisableInternet = VTAP.Component.Core.extend({
                 if (error)
                 {
                     console.error("[ERROR] Failed to mark payment as internet disabled:", error);
-                    this.addLog("[ERROR] Failed to mark payment as internet disabled:", error);
+                    this.addLog(`[ERROR] Failed to mark payment as internet disabled: ${JSON.stringify(error)}`);
+                    this.flagVtapScriptFailure();
                     this.storeExecutionLogs();
                     return;
                 } else
                 {
-                    console.log("[INFO] Payment field 'cf_payments_internetdisabledbyvtiger' updated to 1 and API respose:", response);
-                    this.addLog("[INFO] Payment field 'cf_payments_internetdisabledbyvtiger' updated to 1 and API respose:", response);
+                    console.log("[INFO] Payment field 'cf_payments_internetdisabledbyvtiger' updated to 1 and API response:", response);
+                    this.addLog(`[INFO] Payment field 'cf_payments_internetdisabledbyvtiger' updated to 1`);
                     this.storeExecutionLogs();
                     return;
                 }
@@ -279,12 +275,10 @@ var Payments_Component_DisableInternet = VTAP.Component.Core.extend({
                 if (error)
                 {
                     console.error("[ERROR] Failed to store script logs:", error);
-                    this.addLog("[ERROR] Failed to store script logs:", error);
                     return;
                 } else
                 {
                     console.log("[INFO] Script logs saved successfully and API response:", response);
-                    this.addLog("[INFO] Script logs saved successfully and API response:", response);
                     return;
                 }
             });
@@ -294,10 +288,19 @@ var Payments_Component_DisableInternet = VTAP.Component.Core.extend({
         addLog(message)
         {
             const now = new Date();
-            const timestamp = now.toISOString().replace("T", " ").substring(0, 16);
+            const timestamp = now.toLocaleString('en-CA', {
+                timeZone: 'America/Toronto',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            }).replace(',', '');
+
             const formatted = `[${timestamp}] ${message}`;
             this.executionLogs.push(formatted);
-            console.log(formatted); // Optional: also show in console
+            console.log(formatted);
             return;
         },
         flagVtapScriptFailure()
@@ -312,11 +315,11 @@ var Payments_Component_DisableInternet = VTAP.Component.Core.extend({
                 if (error)
                 {
                     console.error("[ERROR] Failed to flag VTAP script failure:", error);
-                    this.addLog("[ERROR] Failed to flag VTAP script failure: ", error);
+                    this.addLog(`[ERROR] Failed to flag VTAP script failure: ${JSON.stringify(error)}`);
                 } else
                 {
                     console.log("[INFO] Flagged payment as VTAP script failure and API response:", response);
-                    this.addLog("[INFO] Flagged payment as VTAP script failure and API response:", response);
+                    this.addLog(`[INFO] Flagged payment as VTAP script failure }`);
                 }
             });
         }
